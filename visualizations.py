@@ -64,3 +64,18 @@ def visualize_intensity_histogram(image, bins, range, density=True, marker_color
     fig.add_trace(go.Bar(x=bin_edges, y=hist_bins, marker_color=marker_color, marker_line_width=2,
                          marker_line_color='black', opacity=0.8))
     return fig
+
+
+def crop_image_to_roi(im, rois):
+    if rois.shape[0] > 1:
+        raise Warning('Too many ROIs to crop image!')
+    
+    if rois['x0'].values[0] < rois['x1'].values[0] and rois['y0'].values[0] < rois['y1'].values[0]:
+        im = im[rois['y0'].values[0]:rois['y1'].values[0], rois['x0'].values[0]:rois['x1'].values[0]]
+    elif rois['x0'].values[0] > rois['x1'].values[0] and rois['y0'].values[0] < rois['y1'].values[0]:
+        im = im[rois['y0'].values[0]:rois['y1'].values[0], rois['x1'].values[0]:rois['x0'].values[0]]
+    elif rois['x0'].values[0] < rois['x1'].values[0] and rois['y0'].values[0] > rois['y1'].values[0]:
+        im = im[rois['y1'].values[0]:rois['y0'].values[0], rois['x0'].values[0]:rois['x1'].values[0]]
+    else:
+        im = im[rois['y1'].values[0]:rois['y0'].values[0], rois['x1'].values[0]:rois['x0'].values[0]]
+    return im
