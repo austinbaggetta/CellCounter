@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 from dash import Dash, dcc, callback, html, Output, Input, no_update
 
 
-def custom_graph_template(x_title, y_title, template='simple_white', height=500, width=500, linewidth=1.5,
+def fig_temp(x_title, y_title, template='simple_white', height=500, width=500, linewidth=1.5,
                           titles=[''], rows=1, columns=1, shared_y=False, shared_x=False, font_size=22, font_family='Arial', **kwargs):
     """
     Used to make a cohesive graph type. In most functions, these arguments are supplied through **kwargs.
@@ -73,7 +73,7 @@ def visualize_intensity_histogram(image, bins, range, density=True, marker_color
     else:
         y_title = 'Count' 
     hist_bins, bin_edges = np.histogram(hist_data, bins=bins, range=range, density=density)
-    fig = custom_graph_template(x_title='Grayscale Values', y_title=y_title, **kwargs)
+    fig = fig_temp(x_title='Grayscale Values', y_title=y_title, **kwargs)
     fig.add_trace(go.Bar(x=bin_edges, y=hist_bins, marker_color=marker_color, marker_line_width=2,
                          marker_line_color='black', opacity=0.8))
     return fig
@@ -124,3 +124,9 @@ def visualize_detected_cells(im, max_res, save_path=None, seed_size=0, colorscal
     elif save_path is not None and '.svg' in save_path:
         fig.write_image(save_path)
     return fig.show(config={'scrollZoom': True})
+
+def total_cell_number(num_cells, **kwargs):
+    fig = fig_temp(x_title='', y_title='Total Number of Cells', **kwargs)
+    fig.add_trace(go.Bar(x=num_cells['marker'], y=num_cells['seed'], marker_color='darkgrey',
+                        marker_line_width=2, marker_line_color='black'))
+    return fig
