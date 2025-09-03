@@ -8,6 +8,7 @@ import dask.array as da
 import xarray as xr
 from os.path import join as pjoin
 from skimage.morphology import disk
+from scipy.spatial.distance import euclidean
 from skimage.filters import threshold_otsu, threshold_mean
 
 
@@ -203,3 +204,32 @@ def save_params(median_params, bg_sub_params, local_max_params, combine_seeds_pa
 
     with open(pjoin(spath), 'wb') as file:
         pickle.dump(all_params, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_detected_cells(cell_path, file_pattern='detected_cells.csv'):
+    cell_df = pd.DataFrame()
+    for file in os.listdir(cell_path):
+        if file_pattern in file:
+            print(file)
+            loop_df = pd.read_csv(pjoin(cell_path, file))
+            loop_df.loc[:, 'marker'] = file.strip(file_pattern)
+            cell_df = pd.concat([cell_df, loop_df], ignore_index=True)
+    return cell_df
+
+
+def get_overlapping_cells(cell_df, num_cells, dist_thresh=15):
+    denom_marker = num_cells['marker'][num_cells['seed'] == num_cells['seed'].max()].values[0]
+    test_cells = cell_df[cell_df['marker'] == denom_marker]
+    other_cells = cell_df[cell_df['marker'] != denom_marker]
+    output_dict = {'test_seed': [], 'test_seed_marker': [], 'matched_seed': [], 'matched_seed_marker': [], 'dist': []}
+    for _, cell in test_cells.iterrows():
+        for _, other_cell in other_cells.iterrows():
+            dist = euclidean([cell['x'], cell['y']], [other_cell['x'], other_cell['y']])
+            if dist <= dist_thresh:
+                output_dict['test_seed'].append(cell['seed'])
+                output_dict['test_seed_marker'].append(cell['marker'])
+                output_dict['matched_seed'].append(other_cell['seed'])
+                output_dict['matched_seed_marker'].append(other_cell['marker'])
+                output_dict['dist'].append(dist)
+    overlap_df = pd.DataFrame(output_dict)
+    return overlap_df
