@@ -2,6 +2,7 @@ import os
 import cv2
 import math
 import pickle
+import itertools
 import numpy as np
 import pandas as pd
 import dask.array as da
@@ -232,4 +233,24 @@ def get_overlapping_cells(cell_df, num_cells, dist_thresh=15):
                 output_dict['matched_seed_marker'].append(other_cell['marker'])
                 output_dict['dist'].append(dist)
     overlap_df = pd.DataFrame(output_dict)
-    return overlap_df
+    return denom_marker, overlap_df
+
+
+def get_overlap_proportions(overlap_df, num_cells, markers, denom_marker):
+    numer_markers = markers[markers != denom_marker]
+    prop_dict = {'markers': [], 'proportion': []}
+    for num_marker_overlap in np.arange(1, markers.shape[0]):
+        marker_df = overlap_df[overlap_df.groupby(['test_seed']).transform('size') == num_marker_overlap].reset_index(drop=True)
+        if num_marker_overlap == 1:
+            for numerator in numer_markers:
+                prop_dict['markers'].append(f'{numerator}:{denom_marker}')
+                prop_dict['proportion'].append(marker_df[marker_df['matched_seed_marker'] == numerator].shape[0] / num_cells['seed'][num_cells['marker'] == denom_marker].values[0])
+        elif num_marker_overlap == 2:
+            for n1, n2 in itertools.combinations_with_replacement(numer_markers, r=2):
+                if n1 == n2:
+                    pass 
+                else:
+                    sub_df = marker_df[(marker_df['matched_seed_marker'] == n1) | (marker_df['matched_seed_marker'] == n2)]
+                    prop_dict['markers'].append(f'{n1}:{n2}:{denom_marker}')
+                    prop_dict['proportion'].append(sub_df['test_seed'].unique().shape[0] / num_cells['seed'][num_cells['marker'] == denom_marker].values[0])
+    return pd.DataFrame(prop_dict)
