@@ -195,6 +195,31 @@ def combine_seeds(max_res, dist_thresh=4):
     return cell_loc, seeds_final
 
 
+def remove_masked_seeds(seeds_final, max_res, xvals=None, yvals=None):
+    """
+    Remove seeds that exist within the rectangle mask you provide.
+    Args:
+        seeds_final : pandas.DataFrame
+            data frame with columns seed, x, y
+        xvals, yvals : list
+            list containing two values for the start and end of your length and width of the rectangle mask
+    """
+    xvals, yvals = np.sort(xvals), np.sort(yvals)
+    seed_output = pd.DataFrame()
+    for _, seed in seeds_final.iterrows():
+        if (seed['y'] in np.arange(xvals[0], xvals[1])) & (seed['x'] in np.arange(yvals[0], yvals[1])):
+            pass 
+        else:
+            seed_output = pd.concat([seed_output, pd.DataFrame(seed).T], axis=0)
+    seed_output = seed_output.reset_index(drop=True)
+
+    cell_loc = np.zeros_like(max_res)
+    for seed in seed_output['seed']:
+        cell_loc[seed_output['x'][seed_output['seed'] == seed].values[0], seed_output['y'][seed_output['seed'] == seed].values[0]] = 1
+    return cell_loc, seed_output
+        
+
+
 def save_params(median_params, bg_sub_params, local_max_params, combine_seeds_params, spath):
     all_params = {
         'median_params': median_params,
